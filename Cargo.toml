@@ -1,0 +1,9 @@
+[workspace]
+members = ["mnlm"]
+default-members = ["mnlm"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
