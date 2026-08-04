@@ -1,5 +1,6 @@
-use std::os::unix::net::UnixListener;
 use std::path::PathBuf;
+
+use tokio::net::UnixListener;
 
 use crate::error::Result;
 
@@ -24,19 +25,13 @@ impl SocketManager {
         }
     }
 
-    /// 获取套接字文件路径
-    pub fn path(&self) -> &std::path::Path {
-        &self.path
-    }
-
-    /// 创建 Unix Domain Socket 监听器
+    /// 创建异步 Unix Domain Socket 监听器
     ///
     /// 绑定前会清理已存在的套接字文件, 避免 `Address already in use` 错误。
     /// 绑定后设置权限为 0o600, 仅所有者可读写。
-    pub fn create_listener(&self) -> Result<UnixListener> {
-        // 清理已存在的套接字文件
+    pub async fn create_listener(&self) -> Result<UnixListener> {
         if self.path.exists() {
-            std::fs::remove_file(&self.path)?;
+            tokio::fs::remove_file(&self.path).await?;
         }
 
         let listener = UnixListener::bind(&self.path)?;
@@ -66,25 +61,22 @@ mod tests {
     use super::*;
     use std::os::unix::net::UnixStream;
 
-    /// 使用临时路径创建 SocketManager, 避免并行测试互相干扰
     fn test_manager() -> SocketManager {
         let tmp_dir = std::env::temp_dir();
         let pid = std::process::id();
-        // 使用线程名区分, 避免并行测试竞争
         let tid = std::thread::current().id();
         let path = tmp_dir.join(format!("mnlm_test_{:?}_{}.sock", tid, pid));
-        // 先清理可能残留的文件
         if path.exists() {
             std::fs::remove_file(&path).ok();
         }
         SocketManager { path }
     }
 
-    #[test]
-    fn test_create_listener() {
+    #[tokio::test]
+    async fn test_create_listener() {
         let manager = test_manager();
 
-        let listener = manager.create_listener();
+        let listener = manager.create_listener().await;
         assert!(listener.is_ok(), "监听器创建失败: {:?}", listener.err());
 
         assert!(manager.path.exists(), "套接字文件应存在: {:?}", manager.path);
@@ -97,15 +89,14 @@ mod tests {
         assert!(!path.exists(), "Drop 后套接字文件应被删除");
     }
 
-    #[test]
-    fn test_recreate_listener() {
+    #[tokio::test]
+    async fn test_recreate_listener() {
         let manager = test_manager();
 
-        let listener1 = manager.create_listener();
+        let listener1 = manager.create_listener().await;
         assert!(listener1.is_ok());
 
-        // 第二次创建, 旧文件被自动清理后应成功
-        let listener2 = manager.create_listener();
+        let listener2 = manager.create_listener().await;
         assert!(listener2.is_ok(), "重复创建应自动清理旧文件并成功");
 
         drop(manager);
