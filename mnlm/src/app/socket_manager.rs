@@ -1,6 +1,8 @@
 use std::os::unix::net::UnixListener;
 use std::path::PathBuf;
 
+use crate::error::Result;
+
 /// Unix Domain Socket 路径
 const SOCKET_PATH: &str = "/tmp/mnlm.sock";
 
@@ -31,7 +33,7 @@ impl SocketManager {
     ///
     /// 绑定前会清理已存在的套接字文件, 避免 `Address already in use` 错误。
     /// 绑定后设置权限为 0o600, 仅所有者可读写。
-    pub fn create_listener(&self) -> std::io::Result<UnixListener> {
+    pub fn create_listener(&self) -> Result<UnixListener> {
         // 清理已存在的套接字文件
         if self.path.exists() {
             std::fs::remove_file(&self.path)?;

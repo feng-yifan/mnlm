@@ -1,5 +1,8 @@
+use crate::error::Result;
+
 mod config;
 mod socket_manager;
+mod gateway;
 
 pub use config::*;
 
@@ -16,10 +19,9 @@ impl App {
     }
 
     /// 启动应用
-    ///
-    /// 创建 Unix Domain Socket 监听器, 进入事件循环。
-    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let _manager = socket_manager::SocketManager::new();
-        todo!("实现事件循环")
+    pub async fn run(&self) -> Result<()> {
+        let gateway = gateway::Gateway::new()?;
+        gateway.run()?;
+        Ok(())
     }
 }
