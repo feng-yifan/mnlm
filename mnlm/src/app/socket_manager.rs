@@ -22,6 +22,11 @@ impl SocketManager {
         }
     }
 
+    /// 获取套接字文件路径
+    pub fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+
     /// 创建 Unix Domain Socket 监听器
     ///
     /// 绑定前会清理已存在的套接字文件, 避免 `Address already in use` 错误。
