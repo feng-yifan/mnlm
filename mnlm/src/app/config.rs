@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use config::Config as ConfigBuilder;
 use serde::Deserialize;
 
